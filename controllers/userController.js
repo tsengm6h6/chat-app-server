@@ -1,5 +1,5 @@
 const User = require('../model/userModel')
-const bcrypt = require('bcrypt')
+const bcrypt = require('bcryptjs')
 
 const setAvatar = async (req, res, next) => {
   const { uid } = req.params
