@@ -27,7 +27,7 @@ const server = app.listen(process.env.PORT, () => {
 // socket.io
 const io = require('socket.io')(server, {
   cors: {
-    origin: [`http://localhost:${process.env.CLIENT_PORT}`]
+    origin: [`${process.env.CLIENT_URL}`]
   }
 })
 
