@@ -8,7 +8,16 @@ const messageRoutes = require('./routes/messageRoutes')
 const app = express()
 require('dotenv').config()
 
-app.use(cors())
+const corsOptions = {
+  origin: [
+    `${process.env.CLIENT_URL}`,
+    `http://localhost:${process.env.CLIENT_URL}`,
+  ],
+  methods: 'GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS',
+  allowedHeaders: ['Content-Type', 'Authorization'],
+};
+
+app.use(cors(corsOptions))
 app.use(express.json())
 app.use(express.urlencoded({ extended: false }))
 
@@ -25,11 +34,7 @@ const server = app.listen(process.env.PORT, () => {
 })
 
 // socket.io
-const io = require('socket.io')(server, {
-  cors: {
-    origin: [`${process.env.CLIENT_URL}`]
-  }
-})
+const io = require('socket.io')(server, corsOptions)
 
 const onlineUsers = {}
 
