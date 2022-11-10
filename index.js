@@ -9,12 +9,7 @@ const app = express()
 require('dotenv').config()
 
 const corsOptions = {
-  origin: [
-    `${process.env.CLIENT_URL}`,
-    `http://localhost:${process.env.CLIENT_URL}`,
-  ],
-  methods: 'GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS',
-  allowedHeaders: ['Content-Type', 'Authorization'],
+  origin: process.env.CLIENT_URL
 };
 
 app.use(cors(corsOptions))
@@ -38,7 +33,7 @@ const server = app.listen(process.env.PORT, () => {
 })
 
 // socket.io
-const io = require('socket.io')(server, corsOptions)
+const io = require('socket.io')(server, { cors: corsOptions})
 
 const onlineUsers = {}
 
@@ -56,5 +51,3 @@ io.on('connection', socket => {
     delete onlineUsers[userId]
   })
 })
-
-module.exports = server;
