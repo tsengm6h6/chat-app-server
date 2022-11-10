@@ -25,6 +25,10 @@ app.use('/api/auth', authRoutes)
 app.use('/api/users', userRoutes)
 app.use('/api/message', messageRoutes)
 
+app.get('/', (req, res) => {
+  res.send('Hi there')
+})
+
 mongoose.connect(process.env.MONGO_URI)
   .then(() => console.log("DB connection Success"))
   .catch((err) => console.log('DB connection Error', err.message))
