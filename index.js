@@ -56,3 +56,5 @@ io.on('connection', socket => {
     delete onlineUsers[userId]
   })
 })
+
+module.exports = app;
