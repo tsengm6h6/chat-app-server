@@ -33,7 +33,7 @@ const server = app.listen(process.env.PORT, () => {
 })
 
 // socket.io
-const io = require('socket.io')(server, { cors: corsOptions})
+const io = require('socket.io')(server, { cors: corsOptions })
 
 const onlineUsers = {}
 
@@ -51,3 +51,5 @@ io.on('connection', socket => {
     delete onlineUsers[userId]
   })
 })
+
+module.exports = app;
