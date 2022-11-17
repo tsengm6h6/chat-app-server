@@ -21,7 +21,7 @@ app.use('/api/users', userRoutes)
 app.use('/api/message', messageRoutes)
 
 app.get('/', (req, res) => {
-  res.send('Hi there')
+  res.send('Hi there!')
 })
 
 mongoose.connect(process.env.MONGO_URI)
