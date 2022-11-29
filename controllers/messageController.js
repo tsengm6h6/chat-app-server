@@ -1,21 +1,30 @@
 const Messages = require('../model/messageModel')
 
 const postMessage = async (req, res, next) => {
-  const { message, from , to } = req.body
+  const { type, from , to } = req.query
+  const { message } = req.body
   const data = await Messages.create({
     message,
     users: [from, to],
     sender: from
   })
-  if (data) return res.json({ status: true, message: 'Message added successfully.' })
+  const filter = type === 'room' ? [to] : [from, to]
+  if (data) {
+    const messages = await Messages
+      .find()
+      .all('users', filter)
+      .sort({ updatedAt: 1 })
+    return res.json({ status: true, messages })
+  }
   return res.json({ status: false, message: 'Failed to add the message.' })
 }
 
 const getMessages = async(req, res, next) => {
-  const { from, to } = req.query
+  const { type, from, to } = req.query
+  const filter = type === 'room' ? [to] : [from, to]
   const messages = await Messages
     .find()
-    .all('users', [from, to])
+    .all('users', filter)
     .sort({ updatedAt: 1 })
   return res.json({ status: true, messages })
 }
