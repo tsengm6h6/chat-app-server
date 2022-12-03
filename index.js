@@ -37,17 +37,57 @@ const server = app.listen(process.env.PORT, () => {
 // socket.io
 const io = require('socket.io')(server, { cors: corsOptions })
 
-const onlineUsers = {}
+let onlineUsers = []
 
 io.on('connection', socket => {
 
-  socket.on('add-user', (userId) => {
-    console.log('=== add user ===', userId, socket.id)
-    onlineUsers[userId] = socket.id
+  socket.on('USER_ONLINE', (newUserId) => {
+    console.log('=== user-online ===', newUserId, socket.id)
+    if (!onlineUsers.some(({ userId }) => userId === newUserId)) {
+      onlineUsers.push({
+        userId: newUserId, 
+        socketId: socket.id
+      })
+      socket.broadcast.emit('ONLINE_USER_CHANGED', onlineUsers)
+    }
   })
 
-  socket.on('enter-room', roomData => {
-    const { room, user } = roomData
+  // socket.on('USER_OFFLINE', (userId) => {
+  //   onlineUsers = onlineUsers.filter(({ userId }) => userId !== userId)
+  //   io.emit('ONLINE_USER_CHANGED', onlineUsers)
+  // })
+
+  socket.on('disconnect', () => {
+    onlineUsers = onlineUsers.filter(({ userId }) => userId !== userId)
+    io.emit('ONLINE_USER_CHANGED', onlineUsers)
+    console.log('server user disconnected')
+  })
+
+  socket.on('SEND_MESSAGE', (messageData) => {
+    const { type, message, senderId, receiverId } = messageData
+    if (type === 'room') {
+      socket.to(receiverId).emit('RECEIVE_MESSAGE', messageData)
+    } else {
+      const receiver = onlineUsers.find(({ userId }) => userId === receiverId)
+      if (receiver) {
+        socket.to(receiver.socketId).emit('RECEIVE_MESSAGE', messageData)
+      }
+    }
+  })
+
+  socket.on('USER_TYPING', ({ type, senderId, receiverId }) => {
+    if (type === 'room') {
+      socket.to(receiverId).emit('TYPING_NOTIFY')
+    } else {
+      const receiver = onlineUsers.find(({ userId }) => userId === receiverId)
+      if (receiver) {
+        socket.to(receiver.socketId).emit('TYPING_NOTIFY')
+      }
+    }
+  })
+
+  socket.on('ENTER_CHAT_ROOM', roomData => {
+    const { roomId, enterUserId } = roomData
     // 檢查是否已有房間
     const currentRoom = Object.keys(socket.rooms).find(room => room !== socket.id)
     // 若有，則先離開
@@ -55,41 +95,25 @@ io.on('connection', socket => {
       socket.leave(currentRoom)
     }
     // 加入新的
-    socket.join(room)
-    socket.to(room).emit('user-join-room', `${user} 已加入聊天室`) // 除了自己以外的人接收到訊息
+    socket.join(roomId)
+    socket.to(roomId).emit('NEW_USER_JOIN_GROUP_CHAT', {
+      joinId: enterUserId
+    }) // 除了自己以外的人接收到訊息
     // io.sockets.in(room).emit('user-join-room', `${user} 已加入聊天室`) // 發送給在 room 中所有的 Client
   })
 
-  socket.on('leave-room', roomData => {
-    const { room, user } = roomData
-    socket.to(room).emit('user-leave-room', `${user} 已離開聊天室`) // 除了自己以外的人接收到訊息
-  })
-
-  socket.on('user-typing', ({ user, type, from, to }) => {
-    const target = type === 'room' ? to : onlineUsers[to]
-    socket.to(target).emit('receive-typing', {
-      message: `${user} is typing`,
-      type,
-      from
-    })
-  })
-
-  socket.on('input-message', messageData => {
-    console.log('server get input', messageData)
-    const socketId = onlineUsers[messageData.to]
-    if (messageData.type === 'room') {
-      socket.to(messageData.to).emit('client-receive-msg', messageData)
-    } else {
-      socket.to(socketId).emit('client-receive-msg', messageData)
-    }
-  })
-
-  socket.on('logout', (userId) => {
-    delete onlineUsers[userId]
-  })
-
-  socket.on('disconnect', () => {
-    console.log('server user disconnected')
+  socket.on('LEAVE_CHAT_ROOM', roomData => {
+    const { roomId, leaveUserId } = roomData
+    // // 檢查是否已有房間
+    // const currentRoom = Object.keys(socket.rooms).find(room => room !== socket.id)
+    // // 若有，則先離開
+    // if (currentRoom) {
+    //   socket.leave(currentRoom)
+    // }
+    socket.to(roomId).emit('USER_LEAVE_CHAT_ROOM', {
+      leaveId: leaveUserId
+    }) // 除了自己以外的人接收到訊息
+    socket.leave(roomId)
   })
 })
 
