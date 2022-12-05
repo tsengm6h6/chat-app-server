@@ -5,22 +5,27 @@ const getUserRooms = async(req, res, next) => {
   console.log('user', user)
   const rooms = await Room.find()
     .all('users', [user])
-    .sort({ updatedAt: 1 })
+    .sort({ updatedAt: -1 })
   return res.json({ status: true, data: rooms })
 }
 
 const postRoom = async (req, res, next) => {
   const { roomname, users,  avatarImage } = req.body
-  const data = await Room.create({
-    roomname,
-    users,
-    avatarImage
-  })
-  if (data) {
-    console.log(data)
-    return res.json({ status: true, messages: 'Successfully created a room.'  })
+  try {
+    const data = await Room.create({
+      roomname,
+      users,
+      avatarImage
+    })
+    if (data) {
+      console.log(data)
+      return res.json({ status: true, messages: 'Successfully created a room.'  })
+    }
+    throw new Error()
+  } catch(e) {
+    console.log('ERROR', e.message)
+    return res.status(500).json({ status: false, message: e.message })
   }
-  return res.json({ status: false, message: 'Failed to create the room' })
 }
 
 module.exports = {

@@ -48,8 +48,10 @@ io.on('connection', socket => {
         userId: newUserId, 
         socketId: socket.id
       })
-      io.emit('ONLINE_USER_CHANGED', onlineUsers)
+      // io.emit('ONLINE_USER_CHANGED', onlineUsers)
     }
+    console.log('online user', onlineUsers)
+    io.emit('ONLINE_USER_CHANGED', onlineUsers)
   })
 
   socket.on('USER_OFFLINE', (logoutUserId) => {
@@ -120,6 +122,15 @@ io.on('connection', socket => {
       username: leaveUserName
     }) // 除了自己以外的人接收到訊息
     socket.leave(roomId)
+  })
+
+  socket.on('ROOM_CREATED', ({ roomname, creator, invitedUser }) => {
+    invitedUser.forEach(invitedUser => {
+      const socketId = onlineUsers.find(({ userId }) => userId === invitedUser)?.socketId
+      if (socketId) { // 被邀請的人在線上就通知
+        socket.to(socketId).emit('INVITED_TO_ROOM', { message: `${creator} 已將你加入 ${roomname} 聊天室`})
+      }
+    })
   })
 })
 

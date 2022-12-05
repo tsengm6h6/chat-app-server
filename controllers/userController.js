@@ -48,7 +48,7 @@ const getUserContacts = async(req, res, next) => {
     .find()
     .all('users', [userId])
     .select(['roomname', 'users', 'avatarImage'])
-    .sort({ updatedAt: 1 })
+    .sort({ updatedAt: -1 })
     .lean()
 
   const getContactsWithMessage = async (conactType, contacts) => {
