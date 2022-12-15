@@ -67,29 +67,44 @@ io.on('connection', socket => {
     console.log(messageData)
     const { type, message, senderId, receiverId } = messageData
     if (type === 'room') {
-      socket.to(receiverId).emit('RECEIVE_MESSAGE', messageData)
+      // socket.to(receiverId).emit('RECEIVE_MESSAGE', messageData)
+      socket.broadcast.emit('RECEIVE_MESSAGE', messageData)
     } else {
+      console.log('*** onlineUsers *** ***', onlineUsers)
       const receiver = onlineUsers.find(({ userId }) => userId === receiverId)
       if (receiver) {
+        console.log('receiver', receiver)
         socket.to(receiver.socketId).emit('RECEIVE_MESSAGE', messageData)
+        // io.emit('RECEIVE_MESSAGE', messageData)
       }
     }
   })
 
-  socket.on('USER_TYPING', ({ type, senderName, senderId, receiverId }) => {
-    console.log('user type', type, senderName, senderId, receiverId)
+  socket.on('UPDATE_MESSAGE_STATUS', ({ type, readerId, messageSender }) => {
+    console.log('=== 更新已讀 ===')
+    console.table({ type, readerId, messageSender })
+    const socketId = type === 'room' 
+      ? messageSender 
+      : onlineUsers.find(({ userId }) => userId === messageSender)?.socketId
+
+    if (socketId) {
+      socket.to(socketId).emit('MESSAGE_READ', { type, readerId, messageSender })
+    }
+  })
+
+  socket.on('USER_TYPING', ({ type, message, senderId, receiverId }) => {
     if (type === 'room') {
-      socket.to(receiverId).emit('TYPING_NOTIFY', { type, senderName, senderId, receiverId })
+      socket.to(receiverId).emit('TYPING_NOTIFY', { type, message, senderId, receiverId })
     } else {
       const receiver = onlineUsers.find(({ userId }) => userId === receiverId)
       if (receiver) {
-        socket.to(receiver.socketId).emit('TYPING_NOTIFY', { type, senderName, senderId, receiverId })
+        socket.to(receiver.socketId).emit('TYPING_NOTIFY', { type, message, senderId, receiverId })
       }
     }
   })
 
   socket.on('ENTER_CHAT_ROOM', roomData => {
-    const { roomId, enterUserId, enterUserName } = roomData
+    const { roomId, message } = roomData
     console.log('room', roomId)
     // 檢查是否已有房間
     const currentRoom = Object.keys(socket.rooms).find(room => room !== socket.id)
@@ -102,14 +117,14 @@ io.on('connection', socket => {
     socket.join(roomId)
     socket.to(roomId).emit('CHAT_ROOM_NOTIFY', {
       roomId,
-      action: 'JOIN',
-      username: enterUserName
+      message
     }) // 除了自己以外的人接收到訊息
     // io.sockets.in(room).emit('user-join-room', `${user} 已加入聊天室`) // 發送給在 room 中所有的 Client
   })
 
   socket.on('LEAVE_CHAT_ROOM', roomData => {
-    const { roomId, leaveUserId, leaveUserName } = roomData
+    const { roomId, message } = roomData
+    console.log('leave room', roomId)
     // // 檢查是否已有房間
     // const currentRoom = Object.keys(socket.rooms).find(room => room !== socket.id)
     // // 若有，則先離開
@@ -118,10 +133,10 @@ io.on('connection', socket => {
     // }
     socket.to(roomId).emit('CHAT_ROOM_NOTIFY', {
       roomId,
-      action: 'LEAVE',
-      username: leaveUserName
+      message
     }) // 除了自己以外的人接收到訊息
     socket.leave(roomId)
+    console.log('current room', Object.keys(socket.rooms))
   })
 
   socket.on('ROOM_CREATED', ({ roomname, creator, invitedUser }) => {

@@ -33,9 +33,23 @@ const getLatestMessage = async(type, from, to) => {
   return await Message
     .findOne()
     .all('users', filter)
-    .select(['message', 'users', 'sender', 'updatedAt'])
-    .sort({ updatedAt: -1 })
+    .select(['message', 'sender', 'updatedAt'])
+    .sort({ createdAt: -1 })
     .lean()
+}
+
+// TODO: unread query 
+const getUnreadCount = async(type, from, to) => {
+  const filter = type === 'room' ? [to] : [from, to]
+  return await Message
+    .find()
+    .all('users', filter)
+    .select(['unread'])
+    .lean()
+  // return await Message
+  //   .find( { unread: true } )
+  //   .all('user', filter)
+  //   .lean()
 }
 
 const getUserContacts = async(req, res, next) => {
@@ -43,6 +57,7 @@ const getUserContacts = async(req, res, next) => {
   const users = await User
     .find({})
     .select(['username', 'avatarImage'])
+    .sort({ updatedAt: -1 })
     .lean()
   const rooms = await Room
     .find()
@@ -54,11 +69,20 @@ const getUserContacts = async(req, res, next) => {
   const getContactsWithMessage = async (conactType, contacts) => {
     return Promise.all(
       contacts.map(async(contact) => {
-        const message = await getLatestMessage(conactType, userId, contact._id.toHexString())
-        return {...contact, message}
+        const latestMessage = await getLatestMessage(conactType, userId, contact._id.toHexString())
+        const unreadMsg = await getUnreadCount(conactType, userId, contact._id.toHexString())
+        return {
+          ...contact,
+          latestMessage: latestMessage?.message || '',
+          latestMessageSender:  latestMessage?.sender || null,
+          latestMessageUpdatedAt:  latestMessage?.updatedAt || null,
+          unreadCount: unreadMsg?.filter(msg => msg.unread).length || 0,
+          type: conactType
+        }
       })
     )
   }
+
   const userWithoutSelf = users.filter(({ _id }) => userId !== _id.toHexString())
   const userContactsWithMessage = await getContactsWithMessage('user', userWithoutSelf)
   const roomContactsWithMessage = await getContactsWithMessage('room', rooms)

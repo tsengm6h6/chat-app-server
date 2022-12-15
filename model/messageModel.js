@@ -16,9 +16,13 @@ const messageSchema = new Schema(
       ref: "User",
       required: true
     },
-    receiverHasRead: {
+    // receiverHasRead: {
+    //   type: Boolean,
+    //   default: false
+    // },
+    unread: {
       type: Boolean,
-      default: false
+      default: true
     }
   },
   {
