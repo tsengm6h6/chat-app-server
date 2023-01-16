@@ -3,7 +3,7 @@ const { Schema } = mongoose
 
 const roomSchema = new Schema(
   {
-    roomname: {
+    name: {
       type: String,
       required: true,
       minLength: 3,
@@ -17,6 +17,10 @@ const roomSchema = new Schema(
     avatarImage: {
       type: String,
       default: ''
+    },
+    chatType: {
+      type: String,
+      default: 'room'
     }
   },
   {
@@ -24,4 +28,4 @@ const roomSchema = new Schema(
   }
 )
 
-module.exports = mongoose.model('Rooms', roomSchema)
+module.exports = mongoose.model('Room', roomSchema)

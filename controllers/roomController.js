@@ -1,4 +1,4 @@
-const Room = require('../model/roomModel')
+const Room = require('../model/Room')
 
 const getUserRooms = async(req, res, next) => {
   const { user } = req.query
@@ -10,12 +10,13 @@ const getUserRooms = async(req, res, next) => {
 }
 
 const postRoom = async (req, res, next) => {
-  const { roomname, users,  avatarImage } = req.body
+  const { name, users,  avatarImage } = req.body
   try {
     const data = await Room.create({
-      roomname,
+      name,
       users,
-      avatarImage
+      avatarImage,
+      chatType: 'room'
     })
     if (data) {
       console.log(data)

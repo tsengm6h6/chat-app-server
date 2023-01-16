@@ -16,13 +16,9 @@ const messageSchema = new Schema(
       ref: "User",
       required: true
     },
-    // receiverHasRead: {
-    //   type: Boolean,
-    //   default: false
-    // },
-    unread: {
-      type: Boolean,
-      default: true
+    readers: {
+      type: Array,
+      default: []
     }
   },
   {
@@ -30,4 +26,4 @@ const messageSchema = new Schema(
   }
 )
 
-module.exports = mongoose.model('Messages', messageSchema)
+module.exports = mongoose.model('Message', messageSchema)

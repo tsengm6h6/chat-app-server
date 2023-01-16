@@ -1,10 +1,10 @@
-const User = require('../model/userModel')
+const User = require('../model/User')
 const bcrypt = require('bcryptjs')
 
-const registerUser = async (req, res, next) => {
+const register = async (req, res, next) => {
   const { username, email, password } = req.body
 
-  const usernameExist = await User.findOne({ username })
+  const usernameExist = await User.findOne({ name: username })
   const useremailExist = await User.findOne({ email })
 
   if (usernameExist) {
@@ -15,17 +15,18 @@ const registerUser = async (req, res, next) => {
   }
   const hashedPassword = await bcrypt.hash(password, 10)
   const user = await User.create({
-    username,
+    name: username,
     email,
-    password: hashedPassword
+    password: hashedPassword,
+    chatType: 'user'
   })
   delete user._doc.password
   return res.json({ status: true, user })
 }
 
-const loginUser = async (req, res, next) => {
+const login = async (req, res, next) => {
   const { username, password } = req.body
-  const user = await User.findOne({ username })
+  const user = await User.findOne({ name: username })
   if (!user) {
     return res.json({ status: false, msg: 'User does not exists' })
   }
@@ -38,6 +39,6 @@ const loginUser = async (req, res, next) => {
 }
 
 module.exports = {
-  registerUser,
-  loginUser
+  register,
+  login
 }

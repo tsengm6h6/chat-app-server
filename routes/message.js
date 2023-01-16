@@ -2,7 +2,7 @@ const {
   getMessages,
   postMessage,
   updateReadStatus
-} = require('../controllers/messageController')
+} = require('../controllers/message')
 
 const router = require('express').Router()
 

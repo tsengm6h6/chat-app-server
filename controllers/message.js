@@ -1,4 +1,4 @@
-const Messages = require('../model/messageModel')
+const Messages = require('../model/Message')
 
 const postMessage = async (req, res, next) => {
   const { type, from , to } = req.query
