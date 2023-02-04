@@ -10,17 +10,19 @@ const getUserRooms = async(req, res, next) => {
 }
 
 const postRoom = async (req, res, next) => {
+  const { userId } = req.params
   const { name, users,  avatarImage } = req.body
+  console.log('post', name, users, avatarImage)
   try {
     const data = await Room.create({
       name,
-      users,
+      users: [...users, userId],
       avatarImage,
       chatType: 'room'
     })
     if (data) {
       console.log(data)
-      return res.json({ status: true, messages: 'Successfully created a room.'  })
+      return res.json({ status: true, messages: 'Successfully created a room.', data  })
     }
     throw new Error()
   } catch(e) {

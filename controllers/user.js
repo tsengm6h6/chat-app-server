@@ -50,7 +50,7 @@ const getUserContacts = async(req, res) => {
       .select(['name', 'users', 'avatarImage', 'chatType'])
       .sort({ updatedAt: -1 })
       .lean()
-
+      
     const contacts = users.concat(rooms)
     const contactWithMessages = await Promise.all(
       contacts.map(async(contact) => {
@@ -82,7 +82,20 @@ const getUserMessages = async(req, res) => {
       .find()
       .all('users', filter)
       .sort({ createdAt: 1 })
-    return res.status(200).json({ status: true, data: messages })
+      .lean()
+    
+    const messagesWithAvatar = await Promise.all(
+      messages.map(async(msg) => {
+        const senderId = msg.sender
+        const user = await User.findById(senderId).lean()
+        return {
+          ...msg,
+          avatarImage: user.avatarImage
+        }
+      })
+    )
+
+    return res.status(200).json({ status: true, data: messagesWithAvatar })
   } catch(err) {
     return res.status(404).json({ message: err.message })
   }
@@ -108,19 +121,14 @@ const postUserMessage = async(req, res) => {
     const { type, chatId } = req.query
     const { message } = req.body
 
-    await Message.create({
+    const newMessage = await Message.create({
       message,
       users: [userId, chatId],
       sender: userId,
       readers: []
     })
-    
-    const filter = type === 'room' ? [chatId] : [userId, chatId]
-    const messages = await Message
-      .find()
-      .all('users', filter)
-      .sort({ createdAt: 1 })
-    return res.status(200).json({ status: true, data: messages })
+
+    return res.status(200).json({ status: true, data: newMessage })
 
   } catch(err) {
     return res.status(404).json({ message: err.message })
