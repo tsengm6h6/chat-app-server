@@ -20,17 +20,11 @@ const initSocket = (server, corsOptions) => {
         })
         io.emit('ONLINE_USER_CHANGED', onlineUsers)
       }
-      console.log('***online users****', onlineUsers)
     })
 
     socket.on('USER_OFFLINE', (logoutUserId) => {
-      console.log('logout', logoutUserId)
       onlineUsers = onlineUsers.filter(({ userId }) => userId !== logoutUserId)
       io.emit('ONLINE_USER_CHANGED', onlineUsers)
-    })
-
-    socket.on('disconnect', () => {
-      console.log('server user disconnected')
     })
 
     socket.on('SEND_MESSAGE', async (messageData) => {
@@ -53,7 +47,6 @@ const initSocket = (server, corsOptions) => {
 
     socket.on('UPDATE_MESSAGE_STATUS', ({ type, readerId, messageSender }) => {
       // messageSender 的訊息被 readerId 已讀
-      console.log('=== 更新已讀 ===')
       const socketId = type === 'room' 
         ? messageSender 
         : onlineUsers.find(({ userId }) => userId === messageSender)?.socketId
@@ -63,13 +56,10 @@ const initSocket = (server, corsOptions) => {
     })
 
     socket.on('UPDATE_MESSAGE_READERS', ({ type, readerId, toId }) => {
-      console.table({ type, readerId, toId })
-      console.table(onlineUsers)
       const socketId = type === 'room' 
         ? toId 
         : onlineUsers.find(({ userId }) => userId === toId)?.socketId
       if (socketId) {
-        console.log('socktId', socketId)
         socket.to(socketId).emit('MESSAGE_READ', { type, readerId, toId })
       }
     })
@@ -96,27 +86,28 @@ const initSocket = (server, corsOptions) => {
       }
       // 加入新的
       socket.join(roomId)
+      // 除了自己以外的人接收到訊息
       socket.to(roomId).emit('CHAT_ROOM_NOTIFY', {
         roomId,
         message
-      }) // 除了自己以外的人接收到訊息
-      // io.sockets.in(room).emit('user-join-room', `${user} 已加入聊天室`) // 發送給在 room 中所有的 Client
+      })
     })
 
     socket.on('LEAVE_CHAT_ROOM', roomData => {
       const { roomId, message } = roomData
-      console.log('leave room', roomId)
+      // 除了自己以外的人接收到訊息
       socket.to(roomId).emit('CHAT_ROOM_NOTIFY', {
         roomId,
         message
-      }) // 除了自己以外的人接收到訊息
+      })
       socket.leave(roomId)
     })
     
     socket.on('ROOM_CREATED', ({ name, creator, invitedUser }) => {
       invitedUser.forEach(invitedUser => {
         const socketId = onlineUsers.find(({ userId }) => userId === invitedUser)?.socketId
-        if (socketId) { // 被邀請的人在線上就通知
+        // 被邀請的人在線上才通知
+        if (socketId) {
           socket.to(socketId).emit('INVITED_TO_ROOM', { message: `${creator} 已將你加入 ${name} 聊天室`})
         }
       })

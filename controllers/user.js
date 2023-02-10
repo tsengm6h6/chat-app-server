@@ -88,7 +88,6 @@ const getUserMessages = async(req, res) => {
       messages.map(async(msg) => {
         const senderId = msg.sender
         const user = await User.findById(senderId).lean()
-        console.log('user***', user)
         return {
           ...msg,
           avatarImage: user.avatarImage
@@ -126,7 +125,6 @@ const postUserMessage = async(req, res) => {
 const postRoom = async (req, res, next) => {
   const { userId } = req.params
   const { name, users,  avatarImage } = req.body
-  console.log('post', name, users, avatarImage)
   try {
     const data = await Room.create({
       name,
@@ -135,12 +133,10 @@ const postRoom = async (req, res, next) => {
       chatType: 'room'
     })
     if (data) {
-      console.log(data)
       return res.json({ status: true, messages: 'Successfully created a room.', data  })
     }
     throw new Error()
   } catch(e) {
-    console.log('ERROR', e.message)
     return res.status(500).json({ status: false, message: e.message })
   }
 }
