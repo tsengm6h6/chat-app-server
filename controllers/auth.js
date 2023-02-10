@@ -1,18 +1,14 @@
 const User = require('../model/User')
 const bcrypt = require('bcryptjs')
+const jwt = require('jsonwebtoken')
+const { validationResult } = require('express-validator')
 
 const register = async (req, res, next) => {
   const { username, email, password, avatarImage } = req.body
 
-  const usernameExist = await User.findOne({ name: username })
-  const useremailExist = await User.findOne({ email })
+  const errors = validationResult(req)
+  if(!errors.isEmpty()) return res.status(400).json({ errors: errors.array() })
 
-  if (usernameExist) {
-    return res.status(400).json({ status: false, message: 'Username is already exist.'})
-  } 
-  if (useremailExist) {
-    return res.status(400).json({ status: false, message: 'Email is already exist.' })
-  }
   const hashedPassword = await bcrypt.hash(password, 10)
   const user = await User.create({
     name: username,
@@ -22,22 +18,27 @@ const register = async (req, res, next) => {
     chatType: 'user'
   })
   delete user._doc.password
-  return res.json({ status: true, data: user })
+  const accessToken = jwt.sign({ user: { name: username } }, process.env.ACCESS_TOKEN_SECRET)
+  return res.json({ status: true, data: { ...user._doc, accessToken } })
 }
 
 const login = async (req, res, next) => {
   const { username, password } = req.body
-  console.log( username, password)
+
+  const errors = validationResult(req)
+  if(!errors.isEmpty()) return res.status(400).json({ errors: errors.array() })
+  
   const user = await User.findOne({ name: username })
   if (!user) {
-    return res.status(400).json({ status: false, message: 'User does not exists'})
+    return res.status(400).json({ errors: [{ 'msg': 'User does not exists' }] })
   }
   const passwordCorrect = bcrypt.compareSync(password, user.password)
   if (!passwordCorrect) {
-    return res.status(400).json({ status: false, message: 'Password is not correct.'})
+    return res.status(400).json({ errors: [{ 'msg': 'Password is not correct.' }] })
   }
   delete user._doc.password
-  return res.json({ status: true, data: user })
+  const accessToken = jwt.sign({ user: { name: username } }, process.env.ACCESS_TOKEN_SECRET, { expiresIn: '15s' })
+  return res.json({ status: true, data: { ...user._doc, accessToken } })
 }
 
 module.exports = {

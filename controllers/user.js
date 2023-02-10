@@ -88,6 +88,7 @@ const getUserMessages = async(req, res) => {
       messages.map(async(msg) => {
         const senderId = msg.sender
         const user = await User.findById(senderId).lean()
+        console.log('user***', user)
         return {
           ...msg,
           avatarImage: user.avatarImage

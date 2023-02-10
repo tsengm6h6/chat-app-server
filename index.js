@@ -3,7 +3,6 @@ const cors = require('cors')
 const mongoose = require("mongoose")
 const authRoutes = require('./routes/auth')
 const userRoutes = require('./routes/user')
-const messageRoutes = require('./routes/message')
 const roomRoutes = require('./routes/roomRoutes')
 const { initSocket } = require('./socket/index')
 
@@ -20,7 +19,6 @@ app.use(express.urlencoded({ extended: false }))
 
 app.use('/api/auth', authRoutes)
 app.use('/api/users', userRoutes)
-// app.use('/api/message', messageRoutes)
 app.use('/api/room', roomRoutes)
 
 app.get('/', (req, res) => {
