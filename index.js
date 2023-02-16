@@ -1,5 +1,6 @@
 const express = require('express')
 const cors = require('cors')
+const cookieParser = require('cookie-parser')
 const mongoose = require("mongoose")
 const authRoutes = require('./routes/auth')
 const userRoutes = require('./routes/user')
@@ -15,6 +16,7 @@ const corsOptions = {
 app.use(cors(corsOptions))
 app.use(express.json())
 app.use(express.urlencoded({ extended: false }))
+app.use(cookieParser(process.env.COOKIE_SIGNATURE))
 
 app.use('/api/auth', authRoutes)
 app.use('/api/users', userRoutes)

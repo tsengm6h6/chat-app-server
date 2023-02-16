@@ -1,9 +1,9 @@
 const User = require('../model/User')
 const Room = require('../model/Room')
 const Message = require('../model/Message')
+const asyncHandler = require('express-async-handler')
 
-// READ
-const getUnreadCount = async (type, from, to) => {
+const getUnreadCount = asyncHandler(async (type, from, to) => {
   const filter = type === 'room' ? [to] : [from, to]
   const messageReaders = await Message
     .find({ sender: { $ne: from } }) // sender 不是自己的訊息
@@ -14,9 +14,9 @@ const getUnreadCount = async (type, from, to) => {
   
   // readers 裡面沒有自己的 id
   return messageReaders.filter(({ readers }) => readers.indexOf(from) === -1 ).length || 0
-}
+})
 
-const getMessageInfo = async(type, from, to) => {
+const getMessageInfo = asyncHandler(async(type, from, to) => {
   const filter = type === 'room' ? [to] : [from, to]
   const message = await Message
     .findOne()
@@ -33,11 +33,15 @@ const getMessageInfo = async(type, from, to) => {
     latestMessageUpdatedAt:  message?.updatedAt || null,
     unreadCount
   }
-}
+})
 
-const getUserContacts = async(req, res) => {
+// READ
+const getUserContacts = asyncHandler(async(req, res) => {
   try {
     const { userId } = req.params
+
+    if(!userId) return res.status(400).json({ message: 'Missing required information.' })
+
     const users = await User
       .find({ _id: { $ne: userId } })
       .select(['name', 'avatarImage', 'chatType'])
@@ -64,19 +68,21 @@ const getUserContacts = async(req, res) => {
       })
     )
 
-    return res.status(200).json({ 
-        status: true, 
-        data: contactWithMessages
-    })
+    return res.status(200).json({ data: contactWithMessages })
   } catch(err) {
     return res.status(404).json({ message: err.message })
   }
-}
+})
 
-const getUserMessages = async(req, res) => {
+const getUserMessages = asyncHandler(async(req, res) => {
   try {
     const { userId } = req.params
     const { type, chatId } = req.query
+
+    if(!userId || !type || !chatId) {
+      return res.status(400).json({ message: 'Missing required information.' })
+    }
+
     const filter = type === 'room' ? [chatId] : [userId, chatId]
     const messages = await Message
       .find()
@@ -95,18 +101,22 @@ const getUserMessages = async(req, res) => {
       })
     )
 
-    return res.status(200).json({ status: true, data: messagesWithAvatar })
+    return res.status(200).json({ data: messagesWithAvatar })
   } catch(err) {
     return res.status(404).json({ message: err.message })
   }
-}
+})
 
 // CREATE
-const postUserMessage = async(req, res) => {
+const postUserMessage = asyncHandler(async(req, res) => {
   try {
     const { userId } = req.params
-    const { type, chatId } = req.query
+    const { chatId } = req.query
     const { message } = req.body
+
+    if(!userId || !chatId || !message) {
+      return res.status(400).json({ message: 'Missing required information.' })
+    }
 
     const newMessage = await Message.create({
       message,
@@ -115,38 +125,47 @@ const postUserMessage = async(req, res) => {
       readers: []
     })
 
-    return res.status(200).json({ status: true, data: newMessage })
+    return res.status(200).json({ data: newMessage })
 
   } catch(err) {
-    return res.status(404).json({ message: err.message })
+    return res.status(500).json({ message: err.message })
   }
-}
+})
 
-const postRoom = async (req, res, next) => {
-  const { userId } = req.params
-  const { name, users,  avatarImage } = req.body
+const postRoom = asyncHandler(async (req, res, next) => {
   try {
+    const { userId } = req.params
+    const { name, users,  avatarImage } = req.body
+
+    if(!userId || !name || !users || !avatarImage) {
+      return res.status(400).json({ message: 'Missing required information.' })
+    }
+
     const data = await Room.create({
       name,
       users: [...users, userId],
       avatarImage,
       chatType: 'room'
     })
-    if (data) {
-      return res.json({ status: true, messages: 'Successfully created a room.', data  })
-    }
-    throw new Error()
-  } catch(e) {
-    return res.status(500).json({ status: false, message: e.message })
+
+    return res.json({ data, messages: 'Successfully created a room.' })
+
+  } catch(err) {
+    return res.status(500).json({ message: e.message })
   }
-}
+})
 
 // UPDATE
-const updateMessageReadStatus = async (req, res) => {
+const updateMessageReadStatus = asyncHandler(async (req, res) => {
   try {
     // chatId 的訊息被 userId 已讀
     const { userId } = req.params
     const { type, chatId } = req.query
+
+    if(!userId || !type || !chatId) {
+      return res.status(400).json({ message: 'Missing required information.' })
+    }
+
     const filter = type === 'room' ? [chatId] : [userId, chatId]
 
     // 撈出所有 chat 中 sender 不是自己的 message
@@ -175,11 +194,11 @@ const updateMessageReadStatus = async (req, res) => {
       })
     )
     
-    return res.status(200).json({ status: true, data: { message: 'Successfully updated.' } })
+    return res.status(200).json({ data: null, message: 'Successfully updated.'})
   } catch(err) {
-    return res.status(404).json({ message: err.message })
+    return res.status(500).json({ message: err.message })
   }
-}
+})
 
 module.exports = {
   getUserContacts,

@@ -8,16 +8,17 @@ const {
 const authenticateToken = require('../middleware/authenticateToken')
 
 const router = require('express').Router()
+router.use(authenticateToken)
 
 // READ
-router.get('/:userId/contacts', authenticateToken, getUserContacts)
-router.get('/:userId/messages', authenticateToken, getUserMessages)
+router.get('/:userId/contacts', getUserContacts)
+router.get('/:userId/messages', getUserMessages)
 
 // CREATE
-router.post('/:userId/message', authenticateToken, postUserMessage)
-router.post('/:userId/room', authenticateToken, postRoom)
+router.post('/:userId/message', postUserMessage)
+router.post('/:userId/room', postRoom)
 
 // UPDATE
-router.put('/:userId/messages/status', authenticateToken, updateMessageReadStatus)
+router.put('/:userId/messages/status', updateMessageReadStatus)
 
 module.exports = router
