@@ -19,7 +19,30 @@ const register = asyncHandler(async (req, res, next) => {
     chatType: 'user'
   })
   delete user._doc.password
-  return res.json({ data: { ...user._doc }, message: 'Register Success' })
+
+  // create accessToken & refreshToken
+  const accessToken = jwt.sign(
+    { username },
+    process.env.ACCESS_TOKEN_SECRET,
+    { expiresIn: '1h' }
+  )
+
+  const refreshToken = jwt.sign(
+    { username },
+    process.env.REFRESH_TOKEN_SECERT,
+    { expiresIn: '3d' }
+  )
+
+  // set refreshToken in cookie
+  res.cookie('jwt', refreshToken, {
+    httpOnly: true,
+    secure: true,
+    signed: true,
+    sameSite: 'None',
+    maxAge: 3 * 24 * 60 * 60 * 1000
+  })
+  return res.json({ data: { ...user._doc, accessToken }, message: 'Register Success' })
+
 })
 
 const login = asyncHandler(async (req, res, next) => {
