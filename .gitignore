@@ -10,7 +10,6 @@ Desktop.ini
 
 # npm
 node_modules
-.yarn
 *.log
 *.gz
 
